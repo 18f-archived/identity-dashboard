@@ -503,3 +503,7 @@ Layout/AssignmentIndentation:
 
 Layout/SpaceAfterColon:
   Enabled: true
+
+Style/Documentation:
+  Exclude:
+    - app/policies/*.rb
