@@ -115,7 +115,7 @@ class ServiceConfigWizardController < AuthenticatedController
 
     service_provider.agency_id &&= service_provider.agency.id
     service_provider.user ||= current_user
-    if helpers.help_text_options_enabled? && !current_user.admin
+    if helpers.help_text_options_enabled? && !current_user.logingov_admin?
       service_provider.help_text = parsed_help_text.revert_unless_presets_only.to_localized_h
     elsif parsed_help_text.presets_only?
       service_provider.help_text = parsed_help_text.to_localized_h
@@ -182,36 +182,7 @@ class ServiceConfigWizardController < AuthenticatedController
   end
 
   def wizard_step_params
-    permit_params = [
-      :acs_url,
-      :active,
-      :agency_id,
-      :allow_prompt_login,
-      :approved,
-      :assertion_consumer_logout_service_url,
-      :block_encryption,
-      :description,
-      :friendly_name,
-      :group_id,
-      :ial,
-      :default_aal,
-      :identity_protocol,
-      :issuer,
-      :logo,
-      :metadata_url,
-      :return_to_sp_url,
-      :failure_to_proof_url,
-      :push_notification_url,
-      :signed_response_message_requested,
-      :sp_initiated_login_url,
-      :logo_file,
-      :app_name,
-      :prod_config,
-      redirect_uris: [],
-      attribute_bundle: [],
-      help_text: {},
-    ]
-    params.require(:wizard_step).permit(*permit_params)
+    permitted_attributes(WizardStep)
   end
 
   # relies on ServiceProvider#certs_are_pems for validation
@@ -260,7 +231,7 @@ class ServiceConfigWizardController < AuthenticatedController
       params[:commit].downcase == 'cancel' &&
       IdentityConfig.store.service_config_wizard_enabled &&
       step == STEPS.last &&
-      current_user.admin?
+      current_user.logingov_admin?
   end
 
   def when_skipping_models

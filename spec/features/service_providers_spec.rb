@@ -6,10 +6,7 @@ feature 'Service Providers CRUD' do
     create(:user_team, role_name: [:partner_admin, :partner_developer].sample, team: team)
   end
   let(:user) { user_membership.user }
-  let(:admin) { create(:admin) }
-  let(:admin_membership) do
-    create(:user_team, :logingov_admin, team:)
-  end
+  let(:logingov_admin) { create(:user, :logingov_admin) }
 
   let(:user_to_log_in_as) { user }
 
@@ -54,6 +51,15 @@ feature 'Service Providers CRUD' do
       expect(page).to have_content(user.teams[0].agency.name)
       expect(page).to have_content(I18n.t('service_provider_form.ial_option_2'))
       expect(page).to have_content(I18n.t('service_provider_form.aal_option_2'))
+    end
+
+    scenario 'cannot see or visit link to analytics path' do
+      user_team = create(:user_team, :partner_developer, user: user_to_log_in_as)
+      sp = create(:service_provider, team: user_team.team)
+      visit service_providers_path
+      expect(page).to_not have_content('Analytics')
+      visit analytics_path(sp.id)
+      expect(page).to have_content('Unauthorized')
     end
 
     scenario 'saml fields are shown on sp show page when saml is selected' do
@@ -262,8 +268,9 @@ feature 'Service Providers CRUD' do
       help_text_radio_options = find_all('fieldset.custom-help-text input[type=radio]')
       expect(help_text_radio_options.count).to be(HelpText::PRESETS.values.flatten.count)
 
-      # The first option is currently labeled "Leave blank", so this checks out that logic
+      # The first option is "Leave blank" for `sign_in`, so this exercises the "Leave blank" logic
       help_text_radio_options.first.click
+      # The last option is for `forgot_password` and is something other than "Leave blank"
       help_text_radio_options.last.click
       click_on 'Update'
       visit edit_service_provider_path(service_provider)
@@ -449,8 +456,8 @@ feature 'Service Providers CRUD' do
     # rubocop:enable Layout/LineLength
   end
 
-  context 'with an admin user' do
-    let(:user_to_log_in_as) { admin }
+  context 'when login.gov admin' do
+    let(:user_to_log_in_as) { logingov_admin }
 
     scenario 'can view SP with no team', :versioning do
       service_provider = create(:service_provider)
@@ -529,14 +536,30 @@ feature 'Service Providers CRUD' do
       expect(page).to have_content('Success')
     end
 
-    scenario 'can publish service providers' do
-      visit service_providers_all_path
+    scenario 'can see and visit link to analytics path' do
+      user_team = create(:user_team, :logingov_admin, user: user_to_log_in_as)
+      sp = create(:service_provider, team: user_team.team)
+      visit service_providers_path
+      data_link = sp.friendly_name + ' data'
+      expect(page).to have_content(data_link)
+      click_on data_link
+      expect(page).to have_content('App Analytics Dashboard')
+      expect(page).to have_content(sp.issuer)
+    end
 
-      click_on t('forms.buttons.trigger_idp_refresh')
-      expect(page).to have_content(I18n.t('notices.service_providers_refreshed'))
+    scenario 'can see and visit link to analytics path' do
+      user_team = create(:user_team, :logingov_admin, user: user_to_log_in_as)
+      sp = create(:service_provider, team: user_team.team)
+      visit service_providers_path
+      data_link = sp.friendly_name + ' data'
+      expect(page).to have_content(data_link)
+      click_on data_link
+      expect(page).to have_content('App Analytics Dashboard')
+      expect(page).to have_content(sp.issuer)
     end
 
     scenario 'can enable prompt=login for a service provider' do
+      user_to_log_in_as = logingov_admin
       sp = create(:service_provider, :with_team)
 
       visit edit_service_provider_path(sp)
