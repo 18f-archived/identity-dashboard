@@ -59,6 +59,7 @@ class Teams::UsersController < AuthenticatedController
       return
     end
     authorize membership
+    log_event('updated', 'role_name')
     membership.assign_attributes(membership_params)
     membership.save
     if membership.errors.any?
@@ -158,5 +159,14 @@ class Teams::UsersController < AuthenticatedController
       :manage_team_users?,
       policy_class: UserTeamPolicy,
     )
+  end
+
+  def log_event(method_name, param)
+    return unless IdentityConfig.store.prod_like_env
+    old_param = membership[param]
+    new_param = membership_params[param]
+    if new_param && new_param != old_param
+      Rails.logger.info("USER_TEAM: #{method_name.titleize} param to #{new_param} from #{old_param}")
+    end
   end
 end
