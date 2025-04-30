@@ -112,12 +112,17 @@ describe Teams::UsersController do
 
         context 'in a prod_like_env' do
           let(:updatable_membership) { create(:user_team, :partner_readonly, team:) }
+          # let(:logs) { Logs.new user:, request: nil, session: {} }
+          let(:logs) { instance_double('Logs') }#.as_stubbed_const(:team_role_updated => true) }
 
           before do
             allow(IdentityConfig.store).to receive(:prod_like_env).and_return(true)
-            allow(Rails.logger).to receive(:info).with(any_args)
-          end
+            allow(logs).to receive(:team_role_updated).and_return(true)
 
+            #allow(Logs).to receive(:new).with(:team_role_updated)#.and_return(instance_double(Logs))
+          end
+          # allow class and expect response
+#expect class Log to receive :new with () and_return instance_double
           it 'logs updates to member roles' do
             put :update, params: {
               team_id: team.id,
@@ -125,9 +130,8 @@ describe Teams::UsersController do
               user_team: { role_name: 'partner_developer' },
             }
 
-            expect(Rails.logger).to have_received(:info).at_least(:once).with(
-              'USER_TEAM: Updated param to partner_developer from partner_readonly',
-            )
+            expect(logs).to have_received(:team_role_updated)
+            # expect(Rails.logger).to have_received(:info).exactly(1).times.with('team_role_updated')
           end
 
           it 'does not log updates when roles are unchanged' do
@@ -137,9 +141,8 @@ describe Teams::UsersController do
               user_team: { role_name: 'partner_readonly' },
             }
 
-            expect(Rails.logger).to_not have_received(:info).with(
-              'USER_TEAM: Updated param to partner_readonly from partner_readonly',
-            )
+            expect(logs).to_not have_received(:team_role_updated)
+            # expect(Rails.logger).to_not have_received(:info).with('team_role_updated')
           end
         end
       end
