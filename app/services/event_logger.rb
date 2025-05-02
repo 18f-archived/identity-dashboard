@@ -12,14 +12,8 @@ class EventLogger
     @request = options[:request] || @controller.try(:request)
     @user = options[:user] || @controller.try(:user)
     @session = options[:session] || @controller.try(:session)
-    @event_logger = options[:logger] || event_logger
+    @logger = options[:logger] || Rails.logger
     @options = options
-  end
-
-  def event_logger
-    ActiveSupport::Logger.new(
-      Rails.root.join('log', IdentityConfig.store.event_log_filename),
-    )
   end
 
   def track_event(name, properties = {}, options = {})
@@ -73,7 +67,7 @@ class EventLogger
   protected
 
   def log_event(data)
-    event_logger.info(data.to_json)
+    @logger.info(data.to_json)
   end
 
   def browser

@@ -42,7 +42,7 @@ class ApplicationController < ActionController::Base
         user: current_user,
         request: request,
         session: session,
-        logger:
+        logger: logger,
       )
   end
 
